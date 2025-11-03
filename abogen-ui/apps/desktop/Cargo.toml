@@ -1,0 +1,13 @@
+[package]
+name = "abogen-desktop"
+version.workspace = true
+edition.workspace = true
+
+[[bin]]
+name = "abogen-desktop"
+path = "src/main.rs"
+
+[dependencies]
+dioxus = { workspace = true, features = ["desktop"] }
+abogen-ui = { path = "../../crates/ui", features = ["video-generation", "real-tts", "zai-video", "coqui-tts"] }
+

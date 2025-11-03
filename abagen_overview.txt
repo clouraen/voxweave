@@ -1,0 +1,14 @@
+Did you know there’s a tool that connects genetics with brain maps?
+It’s called Abagen, a Python toolbox made by researchers from McGill University.
+
+Abagen helps scientists work with the Allen Human Brain Atlas — a massive dataset showing how thousands of genes are expressed across the human brain.
+
+The problem?
+There are many ways to process this data, and small changes can lead to totally different results.
+That’s where Abagen comes in — it standardizes the workflow, making brain gene-expression analysis reproducible and transparent.
+
+With just a few lines of code, Abagen takes raw microarray data and turns it into a clean matrix that shows which genes are active in which brain regions.
+
+It’s open-source, easy to install with pip install abagen, and widely used in neuroimaging and neuroscience studies.
+
+In short — Abagen helps us understand how our genes shape the structure and function of the human brain, one dataset at a time.

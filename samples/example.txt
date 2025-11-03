@@ -1,0 +1,3 @@
+VoxWeave is ready to transform your text into speech.
+
+This short example demonstrates the text cleaning and subtitle timing pipeline.

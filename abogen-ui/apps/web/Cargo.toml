@@ -1,0 +1,15 @@
+[package]
+name = "abogen-web"
+version.workspace = true
+edition.workspace = true
+
+[[bin]]
+name = "abogen-web"
+path = "src/main.rs"
+
+[dependencies]
+dioxus = { workspace = true, features = ["web"] }
+wasm-bindgen = "0.2"
+web-sys = "0.3"
+abogen-ui = { path = "../../crates/ui" }
+

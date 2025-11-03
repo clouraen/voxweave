@@ -1,0 +1,19 @@
+# The Story of VoxWeave
+
+VoxWeave takes inspiration from the original Python project while embracing the safety guarantees and performance profile of Rust. It demonstrates how text normalization, subtitle generation, and speech synthesis can be implemented in a modular, test-driven manner.
+
+## Text Normalisation
+
+The pipeline collapses stray whitespace, preserves intentional paragraph breaks, and optionally replaces single newlines with spaces. This ensures the audiobook experience mirrors natural narration instead of literal line-by-line reading.
+
+## Subtitle Timing
+
+Subtitle segments can follow sentences or fixed word counts. This example uses grouped words so that the resulting SRT file remains readable, even when paired with rapid narration.
+
+## Audio Output
+
+When the espeak engine is available, VoxWeave writes a WAV file to disk. For environments without audio backends, the `--mock` flag produces a textual representation that keeps integration tests fast and deterministic.
+
+## Conclusion
+
+Porting complex Python applications to Rust is achievable with steady iteration, thoughtful boundary seams, and comprehensive tests. VoxWeave showcases these techniques in a practical, audio-focused context.

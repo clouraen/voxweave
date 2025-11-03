@@ -1,0 +1,5 @@
+target/
+output_dir/
+__pycache__/
+*.pyc
+.DS_Store

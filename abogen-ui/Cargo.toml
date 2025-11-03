@@ -1,0 +1,24 @@
+[workspace]
+members = [
+    "crates/ui",
+    "apps/desktop",
+    "apps/web",
+    "apps/mobile",
+]
+resolver = "2"
+
+[workspace.package]
+version = "1.1.0"
+edition = "2021"
+license = "MIT OR Apache-2.0"
+
+[workspace.dependencies]
+dioxus = "0.7"
+serde = { version = "1.0", features = ["derive"] }
+serde_json = "1.0"
+
+[profile.release]
+opt-level = 3
+lto = true
+codegen-units = 1
+

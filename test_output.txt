@@ -1,0 +1,37 @@
+   Compiling voxweave v0.1.0 (/Users/cleitonmouraloura/Documents/voxweave)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 2.28s
+     Running unittests src/lib.rs (target/debug/deps/voxweave-bf8009e9a7f31114)
+
+running 17 tests
+test sanitize::tests::empty_input_defaults_to_audiobook ... ok
+test queue::tests::queue_preserves_fifo_order ... ok
+test sanitize::tests::linux_slashes_replaced ... ok
+test sanitize::tests::mac_folder_avoids_leading_dot ... ok
+test sanitize::tests::windows_invalid_chars_replaced ... ok
+test sanitize::tests::windows_reserved_names_are_prefixed ... ok
+test subtitle::tests::disabled_granularity_yields_no_entries ... ok
+test subtitle::tests::srt_formatting_is_correct ... ok
+test config::tests::config_round_trip_persists_data ... ok
+test subtitle::tests::words_grouped_by_chunk_size ... ok
+test config::tests::default_config_is_returned_when_missing ... ok
+test subtitle::tests::sentences_are_split_correctly ... ok
+test text::tests::replaces_single_newlines_when_enabled ... ok
+test text::tests::reduces_multiple_blank_lines ... ok
+test text::tests::trims_and_collapses_whitespace_per_line ... ok
+test pipeline::tests::convert_path_cleans_text_before_writing ... ok
+test pipeline::tests::convert_queue_processes_all_items ... ok
+
+test result: ok. 17 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running unittests src/main.rs (target/debug/deps/voxweave-5046a0dd81354f39)
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+   Doc-tests voxweave
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
