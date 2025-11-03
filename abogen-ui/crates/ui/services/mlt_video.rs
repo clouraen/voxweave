@@ -206,6 +206,13 @@ fn escape_xml(s: &str) -> String {
         .replace("'", "&apos;")
 }
 
+/// Escape text for Pango markup (preserve markup tags but escape content)
+fn escape_for_pango(s: &str) -> String {
+    s.replace("&", "&amp;")
+        .replace("<", "&lt;")
+        .replace(">", "&gt;")
+}
+
 /// Render video using MLT XML script
 pub async fn render_mlt_video(
     mlt_xml_path: &Path,

@@ -130,3 +130,23 @@ voxweave video input.txt --style cinematic --resolution 1080p
 ```
 
 For complete video generation documentation, see `CLI_VIDEO_GENERATION.md`.
+- `video-generation`: Enable AI video generation from text
+  - Generates narrated videos with AI-generated visuals
+  - Multiple video styles (realistic, anime, cinematic, etc.)
+  - Subtitle embedding support
+  - See `CLI_VIDEO_GENERATION.md` for detailed guide
+
+### Video Generation (CLI)
+
+Build with video generation support:
+```bash
+cargo build --features video-generation
+```
+
+Generate a video from text:
+```bash
+export ZAI_API_KEY=your_api_key_here
+voxweave video input.txt --style cinematic --resolution 1080p
+```
+
+For complete video generation documentation, see `CLI_VIDEO_GENERATION.md`.

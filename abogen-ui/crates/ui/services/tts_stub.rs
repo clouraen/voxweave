@@ -180,7 +180,7 @@ pub async fn process_queue(
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::state::{FileInfo, SubtitleFormat, SubtitleMode, VoiceFormat};
+    use crate::state::{FileInfo, SubtitleFormat, SubtitleMode, VoiceFormat, SubtitleDisplayStyle};
     
     #[tokio::test]
     async fn test_process_queue_progress() {
@@ -205,6 +205,8 @@ mod tests {
             video_format: crate::state::VideoFormat::Mp4,
             video_prompt: None,
             save_location: crate::state::SaveLocation::Desktop,
+            subtitle_display_style: SubtitleDisplayStyle::WordByWord,
+            show_ipa_transcription: false,
         }];
         
         // Note: This test would need proper AppState setup with signals
@@ -212,5 +214,3 @@ mod tests {
         assert_eq!(items.len(), 1);
     }
 }
-
-

@@ -54,7 +54,7 @@ struct VideoArgs {
     /// Voice identifier (use `list-voices` to see options)
     #[arg(short, long)]
     voice: Option<String>,
-    /// Video style (realistic, anime, 3d, cinematic, biotech, cyberpunk, educational)
+    /// Video style (realistic, anime, 3d, cinematic, biotech, cyberpunk, educational, wan2.5-t2v-preview)
     #[arg(long, default_value = "cyberpunk")]
     style: String,
     /// Video resolution (720p, 1080p, 4k)
@@ -211,7 +211,9 @@ fn select_voice<'a>(
             return Some(voice);
         }
     }
-    voices.first()
+    // Default to am_michael (American English Male)
+    find_voice(voices, "am_michael")
+        .or_else(|| voices.first())
 }
 
 fn default_output_dir(input: &Path) -> PathBuf {
@@ -246,8 +248,6 @@ fn handle_video(args: VideoArgs) -> anyhow::Result<()> {
     use std::fs;
     use voxweave::pipeline::ConvertRequest;
     use voxweave::queue::SubtitleGranularity;
-    use voxweave::video::{VideoConfig, VideoGenerationService};
-    use voxweave::queue::LogLevel;
 
     let voices = default_voice_profiles();
     let mut config = load_config().unwrap_or_default();
@@ -304,8 +304,8 @@ fn handle_video(args: VideoArgs) -> anyhow::Result<()> {
 
     // Step 2: Generate video using runtime
     println!("🎬 Generating {} video at {}...", args.style, args.resolution);
-    println!("⚠️  Video generation requires ZAI_API_KEY environment variable");
-    println!("   Set it with: export ZAI_API_KEY=your_api_key_here");
+    println!("⚠️  Video generation requires ALIBABA_API_KEY environment variable");
+    println!("   Set it with: export ALIBABA_API_KEY=your_api_key_here");
     
     // Use tokio runtime to run async video generation
     let runtime = tokio::runtime::Runtime::new()?;
@@ -329,7 +329,7 @@ fn handle_video(args: VideoArgs) -> anyhow::Result<()> {
         }
         Err(e) => {
             eprintln!("✗ Video generation failed: {}", e);
-            eprintln!("  Make sure ZAI_API_KEY is set and valid");
+            eprintln!("  Make sure ALIBABA_API_KEY is set and valid");
             Err(anyhow::anyhow!("Video generation failed: {}", e))
         }
     }
@@ -344,7 +344,7 @@ async fn generate_video_cli(
     format: &str,
     prompt: Option<&str>,
 ) -> anyhow::Result<PathBuf> {
-    use voxweave::video::{VideoConfig, VideoGenerationService};
+    use voxweave::video::{VideoGenerationService, VideoGenerationServiceExt, VideoConfig};
     use voxweave::queue::{VideoStyle, VideoResolution, VideoFormat, LogLevel};
     
     // Parse style
@@ -356,6 +356,7 @@ async fn generate_video_cli(
         "biotech" => VideoStyle::Biotech,
         "cyberpunk" => VideoStyle::Cyberpunk,
         "educational" => VideoStyle::Educational,
+        "wan2.5-t2v-preview" => VideoStyle::Wan2_5,
         _ => VideoStyle::Cyberpunk,
     };
 
@@ -404,7 +405,7 @@ async fn generate_video_cli(
     };
 
     // Generate video
-    let video_path = service.generate_video(
+    let video_path = service.generate_video_from_text(
         audio_path,
         subtitle_path,
         &config,

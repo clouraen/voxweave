@@ -8,5 +8,7 @@ pub mod video_generation;
 pub mod mlt_video;
 #[cfg(feature = "zai-video")]
 pub mod zai_video;
+#[cfg(feature = "video-generation")]
+pub mod aliyun_video;
 pub mod voices;
 

@@ -425,7 +425,7 @@ fn MainScreen(
                     ",
                     CheckBox {
                         checked: state.generate_video.clone(),
-                        label: "🎬 Generate Video with Z.AI",
+                        label: "🎬 Generate Video with Alibaba wan2.5-i2v",
                     }
                     
                     if *state.generate_video.read() {

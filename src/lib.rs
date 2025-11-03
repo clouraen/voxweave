@@ -9,5 +9,7 @@ pub mod tts;
 pub mod coqui_tts;
 #[cfg(feature = "video-generation")]
 pub mod video;
+#[cfg(feature = "video-generation")]
+pub mod aliyun_video;
 
 pub use pipeline::{ConvertRequest, convert_path};

@@ -9,6 +9,7 @@ pub enum VideoStyle {
     Biotech,
     Cyberpunk,
     Educational,
+    Wan2_5,
 }
 
 impl VideoStyle {
@@ -21,6 +22,7 @@ impl VideoStyle {
             VideoStyle::Biotech => "biotech",
             VideoStyle::Cyberpunk => "cyberpunk",
             VideoStyle::Educational => "educational",
+            VideoStyle::Wan2_5 => "wan2.5-t2v-preview",
         }
     }
 }

@@ -258,6 +258,27 @@ pub async fn generate_zai_video_with_composition(
         VideoStyle::Biotech => "biotech",
         VideoStyle::Cyberpunk => "cyberpunk",
         VideoStyle::Educational => "educational",
+        VideoStyle::Wan2_5 => {
+            // Use Alibaba Aliyun service for wan2.5-t2v-preview model
+            #[cfg(feature = "video-generation")]
+            {
+                use crate::services::aliyun_video::generate_aliyun_video_with_composition;
+                return generate_aliyun_video_with_composition(
+                    text,
+                    resolution,
+                    audio_path,
+                    subtitle_path,
+                    subtitle_text,
+                    output_dir,
+                    logs,
+                    progress,
+                ).await;
+            }
+            #[cfg(not(feature = "video-generation"))]
+            {
+                return Err("Alibaba Aliyun video generation requires video-generation feature".to_string());
+            }
+        }
     };
 
     let resolution_str = resolution.as_str();
