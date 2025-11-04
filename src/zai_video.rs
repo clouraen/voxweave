@@ -1,95 +1,78 @@
+//! Z.AI Video Generation Service
+//! 
+//! Implements video generation using Z.AI's CogVideoX-3 model
 
-<<<<<<< Local
-use crate::queue::{VideoResolution, VideoStyle, LogLevel};
-use serde::{Deserialize, Serialize};
 use std::path::{Path, PathBuf};
-
-#[cfg(feature = "video-generation")]
+use crate::queue::{VideoStyle, VideoResolution, VideoFormat, LogLevel};
 use anyhow::{Context, Result};
+use serde::{Deserialize, Serialize};
 
-#[derive(Serialize, Deserialize, Debug, Clone)]
-pub struct AliyunVideoRequest {
-    pub model: String, // "wan2.5-i2v-preview"
-    pub input: AliyunVideoInput,
+/// Z.AI Video Generation Request
+#[derive(Debug, Serialize)]
+struct ZAIVideoRequest {
+    model: String,
+    prompt: String,
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub parameters: Option<AliyunVideoParameters>,
+    size: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    quality: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    duration: Option<i32>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    fps: Option<i32>,
 }
 
-#[derive(Serialize, Deserialize, Debug, Clone)]
-pub struct AliyunVideoInput {
-    pub prompt: String,
-}
-
-#[derive(Serialize, Deserialize, Debug, Clone)]
-pub struct AliyunVideoParameters {
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub resolution: Option<String>, // e.g., "1920x1080"
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub duration: Option<u32>, // Duration in seconds
-}
-
-#[derive(Deserialize, Debug)]
-pub struct AliyunVideoResponse {
-    pub id: String,
-    pub status: String,
+/// Z.AI Video Generation Response
+#[derive(Debug, Deserialize)]
+struct ZAIVideoResponse {
+    id: String,
+    model: String,
+    task_status: String,
     #[serde(default)]
-    pub output: Option<AliyunVideoOutput>,
+    request_id: Option<String>,
+}
+
+/// Z.AI Video Status Response
+#[derive(Debug, Deserialize)]
+struct ZAIStatusResponse {
+    model: String,
+    task_status: String,
     #[serde(default)]
-    pub error: Option<AliyunError>,
+    video_result: Option<Vec<VideoResult>>,
+    #[serde(default)]
+    request_id: Option<String>,
 }
 
-#[derive(Deserialize, Debug)]
-pub struct AliyunVideoOutput {
-    pub video_url: Option<String>,
-    pub task_id: Option<String>,
+#[derive(Debug, Deserialize)]
+struct VideoResult {
+    url: String,
+    #[serde(default)]
+    cover_image_url: Option<String>,
 }
 
-#[derive(Deserialize, Debug)]
-pub struct AliyunError {
-    pub code: String,
-    pub message: String,
-}
-
-/// Alibaba Cloud Aliyun Video Generation Service
-#[cfg(feature = "video-generation")]
-pub struct AliyunVideoService {
+/// Z.AI Video Generation Service
+pub struct ZAIVideoService {
     api_key: String,
     base_url: String,
 }
 
-#[cfg(feature = "video-generation")]
-impl AliyunVideoService {
-    /// Create a new Aliyun video service
+impl ZAIVideoService {
+    /// Create a new Z.AI video service
     pub fn new(api_key: String) -> Self {
         Self {
             api_key,
-            base_url: "https://bailian.cn-beijing.aliyuncs.com/api/v1/chat/completions".to_string(),
+            base_url: "https://api.z.ai/api/paas/v4".to_string(),
         }
     }
 
-    /// Get API key from environment ALIBABA_API_KEY or ZAI_API_KEY
+    /// Get API key from environment ZAI_API_KEY
     pub fn from_env() -> Result<Self> {
-        // Try ALIBABA_API_KEY first
-        if let Ok(api_key) = std::env::var("ALIBABA_API_KEY") {
-            return Ok(Self::new(api_key));
-        }
-        
-        // Fall back to ZAI_API_KEY for backward compatibility
-        if let Ok(api_key) = std::env::var("ZAI_API_KEY") {
-            return Ok(Self::new(api_key));
-        }
-        
-        anyhow::bail!("Neither ALIBABA_API_KEY nor ZAI_API_KEY environment variable is set")
+        let api_key = std::env::var("ZAI_API_KEY")
+            .context("ZAI_API_KEY environment variable not set")?;
+        Ok(Self::new(api_key))
     }
 
-    /// Generate video using Alibaba wan2.5-i2v-preview model
-    /// 
-    /// # Arguments
-    /// * `prompt` - Text description for video generation
-    /// * `resolution` - Video resolution
-    /// * `output_dir` - Directory to save the generated video
-    /// * `progress_callback` - Optional callback for progress updates (0-100)
-    /// * `log_callback` - Optional callback for log messages
+    /// Generate video using Z.AI CogVideoX-3 model
     pub async fn generate_video<F, G>(
         &self,
         prompt: &str,
@@ -107,61 +90,54 @@ impl AliyunVideoService {
         let client = Client::new();
 
         if let Some(ref mut cb) = log_callback {
-            cb("Starting Alibaba wan2.5-i2v-preview video generation...", LogLevel::Info);
+            cb("Starting Z.AI CogVideoX-3 video generation...", LogLevel::Info);
         }
 
         if let Some(ref mut cb) = progress_callback {
             cb(10);
         }
 
-        // Convert resolution to string format
-        let resolution_str = match resolution {
+        // Convert resolution to Z.AI format
+        let size = match resolution {
             VideoResolution::P720 => "1280x720",
             VideoResolution::P1080 => "1920x1080",
             VideoResolution::P4K => "3840x2160",
         };
 
         // Build request
-        let request = AliyunVideoRequest {
-            model: "wan2.5-i2v-preview".to_string(),
-            input: AliyunVideoInput {
-                prompt: prompt.to_string(),
-            },
-            parameters: Some(AliyunVideoParameters {
-                resolution: Some(resolution_str.to_string()),
-                duration: None, // Let the model decide based on the prompt
-            }),
+        let request = ZAIVideoRequest {
+            model: "cogvideox-3".to_string(),
+            prompt: prompt.to_string(),
+            size: Some(size.to_string()),
+            quality: Some("speed".to_string()),
+            duration: Some(5),
+            fps: Some(30),
         };
 
         if let Some(ref mut cb) = log_callback {
-            cb("Sending video generation request to Alibaba Cloud...", LogLevel::Info);
+            cb("Sending video generation request to Z.AI...", LogLevel::Info);
         }
 
         // Send request
         let response = client
-            .post(&self.base_url)
+            .post(format!("{}/videos/generations", self.base_url))
             .header("Authorization", format!("Bearer {}", self.api_key))
             .header("Content-Type", "application/json")
             .json(&request)
             .send()
             .await
-            .context("Failed to send request to Alibaba Cloud")?;
+            .context("Failed to send request to Z.AI")?;
 
         if !response.status().is_success() {
             let status = response.status();
             let text = response.text().await.unwrap_or_default();
-            anyhow::bail!("Alibaba Cloud API error ({}): {}", status, text);
+            anyhow::bail!("Z.AI API error ({}): {}", status, text);
         }
 
-        let video_response: AliyunVideoResponse = response
+        let video_response: ZAIVideoResponse = response
             .json()
             .await
-            .context("Failed to parse Alibaba Cloud response")?;
-
-        // Check for errors in response
-        if let Some(error) = video_response.error {
-            anyhow::bail!("Alibaba Cloud error: {} - {}", error.code, error.message);
-        }
+            .context("Failed to parse Z.AI response")?;
 
         if let Some(ref mut cb) = log_callback {
             cb(&format!("Video generation job created: ID={}", video_response.id), LogLevel::Info);
@@ -225,7 +201,6 @@ impl AliyunVideoService {
         use std::time::Duration;
 
         let client = Client::new();
-        let status_url = format!("{}/status/{}", self.base_url.replace("/chat/completions", ""), task_id);
         let max_attempts = 120; // 10 minutes max (5 second intervals)
         let mut attempts = 0;
 
@@ -237,7 +212,7 @@ impl AliyunVideoService {
             tokio::time::sleep(Duration::from_secs(5)).await;
 
             let response = client
-                .get(&status_url)
+                .get(format!("{}/videos/generations/{}", self.base_url, task_id))
                 .header("Authorization", format!("Bearer {}", self.api_key))
                 .send()
                 .await
@@ -248,16 +223,15 @@ impl AliyunVideoService {
                 continue;
             }
 
-            let status_response: AliyunVideoResponse = response
+            let status_response: ZAIStatusResponse = response
                 .json()
                 .await
                 .context("Failed to parse status response")?;
 
             // Update progress based on status
-            let progress_val = match status_response.status.as_str() {
-                "pending" | "queued" => 30,
-                "processing" => 30 + ((attempts * 50) / max_attempts) as u8,
-                "completed" | "success" => 80,
+            let progress_val = match status_response.task_status.as_str() {
+                "PROCESSING" => 30 + ((attempts * 50) / max_attempts) as u8,
+                "SUCCESS" => 80,
                 _ => 30,
             };
             
@@ -265,25 +239,22 @@ impl AliyunVideoService {
                 cb(progress_val);
             }
 
-            match status_response.status.as_str() {
-                "completed" | "success" => {
-                    if let Some(output) = status_response.output {
-                        if let Some(url) = output.video_url {
+            match status_response.task_status.as_str() {
+                "SUCCESS" => {
+                    if let Some(video_results) = status_response.video_result {
+                        if let Some(first_result) = video_results.first() {
                             if let Some(ref mut cb) = log_callback {
                                 cb("Video generation completed!", LogLevel::Info);
                             }
-                            return Ok(url);
+                            return Ok(first_result.url.clone());
                         }
                     }
                     anyhow::bail!("Video completed but no URL provided");
                 }
-                "failed" | "error" => {
-                    let error_msg = status_response.error
-                        .map(|e| format!("{} - {}", e.code, e.message))
-                        .unwrap_or_else(|| "Unknown error".to_string());
-                    anyhow::bail!("Video generation failed: {}", error_msg);
+                "FAIL" => {
+                    anyhow::bail!("Video generation failed");
                 }
-                "processing" | "pending" | "queued" => {
+                "PROCESSING" => {
                     if attempts % 12 == 0 {
                         // Log every minute
                         if let Some(ref mut cb) = log_callback {
@@ -300,7 +271,7 @@ impl AliyunVideoService {
     }
 }
 
-/// Convert VideoStyle to a prompt modifier for Alibaba API
+/// Convert VideoStyle to a prompt modifier for Z.AI
 pub fn style_to_prompt_modifier(style: VideoStyle) -> &'static str {
     match style {
         VideoStyle::Realistic => "Photorealistic cinematic video",
@@ -325,39 +296,3 @@ pub fn construct_prompt(style: VideoStyle, base_content: &str, custom_prompt: Op
         format!("{} depicting: {}", modifier, base_content)
     }
 }
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[test]
-    fn test_style_to_prompt_modifier() {
-        assert_eq!(style_to_prompt_modifier(VideoStyle::Realistic), "Photorealistic cinematic video");
-        assert_eq!(style_to_prompt_modifier(VideoStyle::Anime), "Anime-style animated video");
-        assert_eq!(style_to_prompt_modifier(VideoStyle::Cyberpunk), "Cyberpunk neon cityscape with vibrant colors and futuristic aesthetics");
-    }
-
-    #[test]
-    fn test_construct_prompt_with_custom() {
-        let custom_prompt = Some("Epic space battle");
-        let result = construct_prompt(VideoStyle::Cinematic, "base content", custom_prompt);
-        assert_eq!(result, "Epic space battle");
-    }
-
-    #[test]
-    fn test_construct_prompt_without_custom() {
-        let result = construct_prompt(VideoStyle::Cyberpunk, "a futuristic city", None);
-        assert!(result.contains("Cyberpunk neon cityscape"));
-        assert!(result.contains("a futuristic city"));
-    }
-
-    #[test]
-    fn test_resolution_conversion() {
-        assert_eq!(VideoResolution::P720.as_str(), "720p");
-        assert_eq!(VideoResolution::P1080.as_str(), "1080p");
-        assert_eq!(VideoResolution::P4K.as_str(), "4k");
-    }
-}
-
-=======
->>>>>>> Remote

@@ -7,6 +7,8 @@ use crate::sanitize::sanitize_name_for_os;
 use crate::subtitle::{format_srt, generate_subtitles};
 use crate::text::clean_text;
 use crate::tts::{SpeechEngine, VoiceProfile};
+use crate::mlt::{MltConfig, create_mlt_project, get_audio_duration};
+use crate::package::create_package;
 
 #[derive(Debug, Clone)]
 pub struct ConvertRequest {
@@ -17,6 +19,8 @@ pub struct ConvertRequest {
     pub subtitle_granularity: SubtitleGranularity,
     pub replace_single_newlines: bool,
     pub average_words_per_minute: f32,
+    pub create_package: bool,
+    pub package_name: Option<String>,
 }
 
 pub fn convert_path<E: SpeechEngine>(
@@ -39,7 +43,7 @@ pub fn convert_path<E: SpeechEngine>(
         .synthesize_to_file(&cleaned, &request.voice, request.speed, &audio_path)
         .context("speech synthesis failed")?;
 
-    if !cleaned.is_empty() {
+    let subtitle_path = if !cleaned.is_empty() {
         let subtitles = generate_subtitles(
             &cleaned,
             request.subtitle_granularity,
@@ -48,8 +52,47 @@ pub fn convert_path<E: SpeechEngine>(
         if !subtitles.is_empty() {
             let srt = format_srt(&subtitles);
             let subtitle_path = request.output_dir.join(format!("{sanitized}.srt"));
-            std::fs::write(subtitle_path, srt).context("writing subtitles failed")?;
+            std::fs::write(&subtitle_path, srt).context("writing subtitles failed")?;
+            Some(subtitle_path)
+        } else {
+            None
         }
+    } else {
+        None
+    };
+
+    // If package creation is requested, create MLT project and ZIP package
+    if request.create_package {
+        // Get audio duration
+        let duration = get_audio_duration(&audio_path)
+            .unwrap_or(10.0); // Default to 10 seconds if we can't read duration
+        
+        // Create MLT project
+        let mlt_config = MltConfig {
+            duration_seconds: duration,
+            ..Default::default()
+        };
+        
+        let mlt_content = create_mlt_project(
+            &audio_path,
+            subtitle_path.as_deref(),
+            &mlt_config,
+        )?;
+        
+        // Determine package name
+        let package_name = request.package_name.as_deref()
+            .unwrap_or(&sanitized);
+        let zip_path = request.output_dir.join(format!("{}.zip", package_name));
+        
+        // Create ZIP package
+        let final_path = create_package(
+            &audio_path,
+            subtitle_path.as_deref(),
+            &mlt_content,
+            &zip_path,
+        )?;
+        
+        return Ok(final_path);
     }
 
     Ok(audio_path)
@@ -69,6 +112,8 @@ pub fn convert_queue<E: SpeechEngine>(
             subtitle_granularity: item.subtitle_granularity,
             replace_single_newlines: item.replace_single_newlines,
             average_words_per_minute: 150.0,
+            create_package: false,
+            package_name: None,
         };
         outputs.push(convert_path(engine, &req)?);
     }
@@ -102,6 +147,8 @@ mod tests {
             subtitle_granularity: SubtitleGranularity::Disabled,
             replace_single_newlines: false,
             average_words_per_minute: 150.0,
+            create_package: false,
+            package_name: None,
         };
 
         let output_path = convert_path(&engine, &request).unwrap();
@@ -125,6 +172,8 @@ mod tests {
                 speed: 1.0,
                 subtitle_granularity: SubtitleGranularity::Disabled,
                 replace_single_newlines: false,
+                create_package: false,
+                package_name: None,
             });
             _input_files.push(input);
             _output_dirs.push(output_dir);

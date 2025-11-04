@@ -1,7 +1,11 @@
+<<<<<<< Local
 //! Video generation service for VoxWeave
 //! 
-//! This module provides video generation functionality using the Alibaba wan2.5-i2v-preview API.
+//! This module provides video generation functionality using the Z.AI CogVideoX-3 API.
+=======
+>>>>>>> Remote
 
+<<<<<<< Local
 use std::path::{Path, PathBuf};
 use crate::queue::{VideoStyle, VideoResolution, VideoFormat, LogLevel};
 
@@ -28,9 +32,9 @@ impl Default for VideoConfig {
     }
 }
 
-/// Alibaba Video Generation Service (re-exported from aliyun_video)
+/// Z.AI Video Generation Service
 #[cfg(feature = "video-generation")]
-pub use crate::aliyun_video::AliyunVideoService as VideoGenerationService;
+pub use crate::zai_video::ZAIVideoService as VideoGenerationService;
 
 /// Extension trait for VideoGenerationService to provide CLI-compatible interface
 #[cfg(feature = "video-generation")]
@@ -72,7 +76,7 @@ impl VideoGenerationServiceExt for VideoGenerationService {
         };
 
         // Construct prompt using style
-        let prompt = crate::aliyun_video::construct_prompt(
+        let prompt = crate::zai_video::construct_prompt(
             config.style,
             &base_content,
             config.prompt.as_deref(),
@@ -85,7 +89,7 @@ impl VideoGenerationServiceExt for VideoGenerationService {
             Path::new(".")
         };
 
-        // Call the aliyun_video generate_video method
+        // Call the zai_video generate_video method
         self.generate_video(
             &prompt,
             config.resolution,
@@ -95,3 +99,6 @@ impl VideoGenerationServiceExt for VideoGenerationService {
         ).await
     }
 }
+
+=======
+>>>>>>> Remote
