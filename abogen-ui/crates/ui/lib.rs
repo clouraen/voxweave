@@ -1,4 +1,5 @@
 use dioxus::prelude::*;
+use voxweave::queue::{VideoStyle, VideoResolution, VideoFormat};
 
 
 pub mod components;
@@ -8,6 +9,7 @@ pub mod services;
 
 pub use state::*;
 pub use components::*;
+use components::recording_screen::RecordingScreen;
 
 
 /// Root application component
@@ -120,6 +122,7 @@ fn InnerApp() -> Element {
                             *current_screen.write() = Screen::Main;
                         }
                     },
+                    current_screen: current_screen,
                 }
             },
             Screen::Processing => rsx! {
@@ -380,15 +383,20 @@ fn MainScreen(
                                     // Open directory picker for custom save location
                                     #[cfg(not(target_arch = "wasm32"))]
                                     {
+                                        let mut save_location_clone = state.save_location.clone();
                                         spawn(async move {
-                                            // Use Dioxus 0.7 directory picker API
-                                            // Note: API may vary by version - this is a placeholder
-                                            // For now, prompt user or use a text input
-                                            log::info!("Directory picker not available in Dioxus 0.7 - using Desktop as default");
-                                            // In a real implementation, would use platform-specific APIs
-                                            // For now, keep Desktop selected
-                                            let mut save_location = state.save_location;
-                                            *save_location.write() = SaveLocation::Desktop;
+                                            // Use rfd for native file dialog
+                                            if let Some(folder) = rfd::AsyncFileDialog::new()
+                                                .set_title("Choose Save Location")
+                                                .pick_folder()
+                                                .await
+                                            {
+                                                let path = folder.path().to_string_lossy().to_string();
+                                                log::info!("Custom save location selected: {}", path);
+                                                *save_location_clone.write() = SaveLocation::Custom(path);
+                                            } else {
+                                                log::info!("Directory picker cancelled - keeping current selection");
+                                            }
                                         });
                                     }
                                     

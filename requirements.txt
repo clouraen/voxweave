@@ -1,0 +1,22 @@
+# VoxWeave Python Dependencies
+# These packages are required for Kokoro TTS integration
+
+# Core dependencies
+numpy>=1.20.0
+torch>=2.0.0
+
+# Kokoro TTS
+# Note: For macOS ARM64, use kokoro<0.7.6 due to missing misaki distributions
+kokoro>=0.7.0,<0.7.6
+
+# Installation instructions:
+# For macOS ARM64:
+#   pip install -r requirements.txt
+#
+# For other platforms (may use latest kokoro):
+#   pip install numpy torch kokoro
+#
+# Environment variables:
+#   VOXWEAVE_KOKORO_PYTHON - Python interpreter path (default: python3)
+#   VOXWEAVE_KOKORO_DEVICE - Compute device (default: cpu, options: cuda, mps)
+#   VOXWEAVE_KOKORO_SAMPLE_RATE - Sample rate (default: 24000)

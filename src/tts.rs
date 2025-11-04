@@ -291,6 +291,14 @@ pub fn default_voice_profiles() -> Vec<VoiceProfile> {
         .collect();
 
     voices.extend(build_kokoro_voice_profiles());
+    
+    // Add CoquiTTS voices if the feature is enabled
+    #[cfg(feature = "coqui-tts")]
+    voices.extend(COQUI_VOICES
+        .iter()
+        .map(|(id, description, lang)| VoiceProfile::coqui(id, description, lang))
+        .collect::<Vec<VoiceProfile>>());
+        
     voices
 }
 
@@ -430,6 +438,25 @@ const KOKORO_VOICES: &[&str] = &[
     "zm_yunxi",
     "zm_yunxia",
     "zm_yunyang",
+];
+
+const COQUI_VOICES: &[(&str, &str, &str)] = &[
+    ("coqui_xtts_en", "XTTS English", "en"),
+    ("coqui_xtts_es", "XTTS Spanish", "es"),
+    ("coqui_xtts_fr", "XTTS French", "fr"),
+    ("coqui_xtts_de", "XTTS German", "de"),
+    ("coqui_xtts_it", "XTTS Italian", "it"),
+    ("coqui_xtts_pt", "XTTS Portuguese", "pt"),
+    ("coqui_xtts_pl", "XTTS Polish", "pl"),
+    ("coqui_xtts_tr", "XTTS Turkish", "tr"),
+    ("coqui_xtts_ru", "XTTS Russian", "ru"),
+    ("coqui_xtts_nl", "XTTS Dutch", "nl"),
+    ("coqui_xtts_cs", "XTTS Czech", "cs"),
+    ("coqui_xtts_ar", "XTTS Arabic", "ar"),
+    ("coqui_xtts_zh-cn", "XTTS Chinese", "zh"),
+    ("coqui_xtts_ja", "XTTS Japanese", "ja"),
+    ("coqui_xtts_ko", "XTTS Korean", "ko"),
+    ("coqui_xtts_hi", "XTTS Hindi", "hi"),
 ];
 
 const KOKORO_BRIDGE_SCRIPT: &str = include_str!("../python/kokoro_bridge.py");

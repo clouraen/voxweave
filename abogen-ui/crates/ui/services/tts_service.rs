@@ -12,6 +12,9 @@ use std::fs;
 #[cfg(feature = "coqui-tts")]
 use voxweave::coqui_tts::CoquiEngine;
 
+#[cfg(feature = "video-generation")]
+use voxweave::video::VideoGenerationServiceExt;
+
 /// Determine output directory based on save location setting
 fn get_output_dir(save_location: &SaveLocation, _file_path: &str) -> PathBuf {
     match save_location {
@@ -289,7 +292,7 @@ pub async fn process_queue(
         // Note: For voice cloning, the clone_audio_path would need to be
         // passed from the UI state and set in the voice.command field
         
-        let mut goto_next_item = false;
+        let goto_next_item = false;
 
         // Create output directory
         fs::create_dir_all(&output_dir)
@@ -403,62 +406,43 @@ pub async fn process_queue(
                 level: LogLevel::Info,
             });
             
-            // Try Z.AI video generation first (if enabled)
-            #[cfg(feature = "zai-video")]
+            // Video generation using Z.AI Vidu 2
+            #[cfg(feature = "video-generation")]
             {
-                let subtitle_text_for_zai: Option<String> = subtitle_path.as_ref()
-                    .and_then(|p| std::fs::read_to_string(p).ok());
-                
-                // Use voice ID string for Z.AI API
-                let voice_id_str = &voice.id;
-                
-                match crate::services::zai_video::generate_zai_video_with_composition(
-                    &cleaned,
-                    voice_id_str,
-                    item.video_style,
-                    item.video_resolution,
-                    &audio_path,
-                    subtitle_path.as_ref().map(|p| p.as_path()),
-                    subtitle_text_for_zai.as_deref(),
-                    &output_dir,
-                    logs,
-                    progress,
-                ).await {
-                    Ok(video_path) => {
-                        logs.write().push(LogEntry {
-                            message: format!("Z.AI video generated successfully: {}", video_path.display()),
-                            level: LogLevel::Info,
-                        });
-                        // Skip standard video generation if Z.AI succeeded
-                        goto_next_item = true;
-                    }
-                    Err(e) => {
-                        // Fall back to regular video generation
-                        logs.write().push(LogEntry {
-                            message: format!("Z.AI video generation failed: {}. Falling back to standard video generation...", e),
-                            level: LogLevel::Notice,
-                        });
-                    }
-                }
-            }
-            
-            // Standard video generation (fallback or if zai-video not enabled)
-            #[cfg(not(feature = "zai-video"))]
-            {
-                if let Some(video_service) = crate::services::video_generation::VideoGenerationService::from_env() {
-                    let video_config = crate::services::video_generation::VideoConfig {
+                if let Ok(video_service) = voxweave::video::VideoGenerationService::from_env() {
+                    let video_config = voxweave::video::VideoConfig {
                         style: item.video_style,
                         resolution: item.video_resolution,
                         format: item.video_format,
                         prompt: item.video_prompt.clone(),
+                        image_urls: None,
                     };
                     
-                    match video_service.generate_video(
+                    let mut progress_logs = logs.clone();
+                    let mut progress_progress = progress.clone();
+                    
+                    let progress_cb = move |p: u8| {
+                        *progress_progress.write() = p;
+                    };
+                    
+                    let log_cb = move |msg: &str, level: voxweave::queue::LogLevel| {
+                        progress_logs.write().push(LogEntry {
+                            message: msg.to_string(),
+                            level: match level {
+                                voxweave::queue::LogLevel::Info => LogLevel::Info,
+                                voxweave::queue::LogLevel::Notice => LogLevel::Notice,
+                                voxweave::queue::LogLevel::Warning => LogLevel::Notice,
+                                voxweave::queue::LogLevel::Error => LogLevel::Error,
+                            },
+                        });
+                    };
+                    
+                    match video_service.generate_video_from_text(
                         &audio_path,
                         subtitle_path.as_ref().map(|p| p.as_path()),
                         &video_config,
-                        logs,
-                        progress,
+                        Some(progress_cb),
+                        Some(log_cb),
                     ).await {
                         Ok(video_path) => {
                             logs.write().push(LogEntry {

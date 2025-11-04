@@ -116,20 +116,42 @@ pub async fn process_queue(
                 });
                 
                 // Check if API key is available
-                if let Some(video_service) = crate::services::video_generation::VideoGenerationService::from_env() {
-                    let video_config = crate::services::video_generation::VideoConfig {
+                if let Ok(video_service) = voxweave::video::VideoGenerationService::from_env() {
+                    use voxweave::video::VideoGenerationServiceExt;
+                    
+                    let video_config = voxweave::video::VideoConfig {
                         style: item.video_style,
                         resolution: item.video_resolution,
                         format: item.video_format,
                         prompt: item.video_prompt.clone(),
+                        image_urls: None,
                     };
                     
-                    match video_service.generate_video(
+                    let mut progress_logs = logs.clone();
+                    let mut progress_progress = progress.clone();
+                    
+                    let progress_cb = move |p: u8| {
+                        *progress_progress.write() = p;
+                    };
+                    
+                    let log_cb = move |msg: &str, level: voxweave::queue::LogLevel| {
+                        progress_logs.write().push(LogEntry {
+                            message: msg.to_string(),
+                            level: match level {
+                                voxweave::queue::LogLevel::Info => LogLevel::Info,
+                                voxweave::queue::LogLevel::Notice => LogLevel::Notice,
+                                voxweave::queue::LogLevel::Warning => LogLevel::Notice,
+                                voxweave::queue::LogLevel::Error => LogLevel::Error,
+                            },
+                        });
+                    };
+                    
+                    match video_service.generate_video_from_text(
                         &audio_path,
                         Some(&subtitle_path),
                         &video_config,
-                        logs,
-                        progress,
+                        Some(progress_cb),
+                        Some(log_cb),
                     ).await {
                         Ok(video_path) => {
                             logs.write().push(LogEntry {

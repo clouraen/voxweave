@@ -286,7 +286,7 @@ fn add_directory_to_zip<W: Write + io::Seek>(
 #[cfg(test)]
 mod tests {
     use super::*;
-    use std::fs;
+
     
     #[test]
     fn test_create_directory_structure() {

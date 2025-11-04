@@ -14,10 +14,13 @@ serde_json = "1"
 thiserror = "1"
 zip = "0.6"
 tempfile = "3"
+reqwest = { version = "0.11", features = ["json", "multipart"], optional = true }
+tokio = { version = "1", features = ["full"], optional = true }
 
 [features]
 default = []
 coqui-tts = []
+video-generation = ["reqwest", "tokio"]
 
 [dev-dependencies]
 assert_cmd = "2"

@@ -1,4 +1,5 @@
 use dioxus::prelude::*;
+use voxweave::queue::{VideoStyle, VideoResolution, VideoFormat};
 
 /// Represents a file that can be processed
 #[derive(Debug, Clone, PartialEq)]

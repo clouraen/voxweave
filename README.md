@@ -20,7 +20,8 @@ and optionally emits timed SRT subtitles.
   the binary name with `VOXWEAVE_ESPEAK_COMMAND`)
 - Optional (for Kokoro voices):
   - Python 3.9+
-  - `pip install kokoro numpy torch` (plus any backend-specific dependencies)
+  - `pip install -r requirements.txt` (recommended) or `pip install kokoro numpy torch`
+  - **Note for macOS ARM64**: Use `kokoro<0.7.6` (included in requirements.txt)
   - Override the python executable with `VOXWEAVE_KOKORO_PYTHON` if needed
 - Optional (for CoquiTTS with voice cloning):
   - Python 3.9+

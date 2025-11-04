@@ -15,17 +15,23 @@ tokio = { version = "1", features = ["full"] }
 log = "0.4"
 anyhow = "1"
 directories = "5"
-voxweave = { path = "../../..", features = ["coqui-tts"] }
+voxweave = { path = "../../..", features = ["coqui-tts", "video-generation"] }
 cpal = { version = "0.15", optional = true }
 hound = { version = "3.5", optional = true }
+rfd = "0.15"
 
 [features]
 default = []
 gpu = []
 real-tts = []
 coqui-tts = ["cpal", "hound"]
+video-generation = ["voxweave/video-generation"]
+zai-video = ["video-generation"]
 
 [[test]]
 name = "state_tests"
 path = "tests/state_tests.rs"
 
+[[test]]
+name = "gesture_control_tests"
+path = "tests/gesture_control_tests.rs"

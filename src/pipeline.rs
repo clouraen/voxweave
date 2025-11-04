@@ -172,8 +172,6 @@ mod tests {
                 speed: 1.0,
                 subtitle_granularity: SubtitleGranularity::Disabled,
                 replace_single_newlines: false,
-                create_package: false,
-                package_name: None,
             });
             _input_files.push(input);
             _output_dirs.push(output_dir);

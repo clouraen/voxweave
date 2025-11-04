@@ -13,6 +13,8 @@ struct ZAIVideoRequest {
     model: String,
     prompt: String,
     #[serde(skip_serializing_if = "Option::is_none")]
+    image_url: Option<Vec<String>>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     size: Option<String>,
     #[serde(skip_serializing_if = "Option::is_none")]
     quality: Option<String>,
@@ -72,12 +74,13 @@ impl ZAIVideoService {
         Ok(Self::new(api_key))
     }
 
-    /// Generate video using Z.AI CogVideoX-3 model
+    /// Generate video using Z.AI Vidu 2 model family (image, start-end, reference)
     pub async fn generate_video<F, G>(
         &self,
         prompt: &str,
         resolution: VideoResolution,
         output_dir: &Path,
+        image_urls: Option<&[String]>,
         mut progress_callback: Option<F>,
         mut log_callback: Option<G>,
     ) -> Result<PathBuf>
@@ -90,27 +93,40 @@ impl ZAIVideoService {
         let client = Client::new();
 
         if let Some(ref mut cb) = log_callback {
-            cb("Starting Z.AI CogVideoX-3 video generation...", LogLevel::Info);
+            cb("Starting Z.AI Vidu 2 video generation...", LogLevel::Info);
         }
 
         if let Some(ref mut cb) = progress_callback {
             cb(10);
         }
 
-        // Convert resolution to Z.AI format
+        // Convert resolution to Z.AI format (720p supported by Vidu 2)
         let size = match resolution {
             VideoResolution::P720 => "1280x720",
             VideoResolution::P1080 => "1920x1080",
             VideoResolution::P4K => "3840x2160",
         };
 
+        // Choose Vidu 2 variant based on images provided
+        let (model, image_url_field): (String, Option<Vec<String>>) = match image_urls {
+            Some(urls) if !urls.is_empty() => {
+                match urls.len() {
+                    1 => ("vidu2-image".to_string(), Some(vec![urls[0].clone()])),
+                    2 => ("vidu2-start-end".to_string(), Some(vec![urls[0].clone(), urls[1].clone()])),
+                    _ => ("vidu2-reference".to_string(), Some(urls.to_vec())),
+                }
+            }
+            _ => ("vidu2-reference".to_string(), None), // prompt-only fallback
+        };
+
         // Build request
         let request = ZAIVideoRequest {
-            model: "cogvideox-3".to_string(),
+            model,
             prompt: prompt.to_string(),
+            image_url: image_url_field,
             size: Some(size.to_string()),
             quality: Some("speed".to_string()),
-            duration: Some(5),
+            duration: Some(4),
             fps: Some(30),
         };
 

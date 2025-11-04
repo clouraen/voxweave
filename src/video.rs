@@ -1,11 +1,3 @@
-<<<<<<< Local
-//! Video generation service for VoxWeave
-//! 
-//! This module provides video generation functionality using the Z.AI CogVideoX-3 API.
-=======
->>>>>>> Remote
-
-<<<<<<< Local
 use std::path::{Path, PathBuf};
 use crate::queue::{VideoStyle, VideoResolution, VideoFormat, LogLevel};
 
@@ -19,6 +11,7 @@ pub struct VideoConfig {
     pub resolution: VideoResolution,
     pub format: VideoFormat,
     pub prompt: Option<String>,
+    pub image_urls: Option<Vec<String>>,
 }
 
 impl Default for VideoConfig {
@@ -28,6 +21,7 @@ impl Default for VideoConfig {
             resolution: VideoResolution::P1080,
             format: VideoFormat::Mp4,
             prompt: None,
+            image_urls: None,
         }
     }
 }
@@ -89,16 +83,14 @@ impl VideoGenerationServiceExt for VideoGenerationService {
             Path::new(".")
         };
 
-        // Call the zai_video generate_video method
+        // Call the zai_video Vidu2 generate_video method with optional images
         self.generate_video(
             &prompt,
             config.resolution,
             output_dir,
+            config.image_urls.as_deref(),
             progress_callback,
             log_callback,
         ).await
     }
 }
-
-=======
->>>>>>> Remote

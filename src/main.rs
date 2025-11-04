@@ -23,6 +23,8 @@ fn run() -> anyhow::Result<()> {
     match cli.command {
         Commands::Convert(args) => handle_convert(args),
         Commands::ListVoices => handle_list_voices(),
+        #[cfg(feature = "video-generation")]
+        Commands::Video(args) => handle_video(args),
     }
 }
 
@@ -37,6 +39,8 @@ struct Cli {
 enum Commands {
     Convert(ConvertArgs),
     ListVoices,
+    #[cfg(feature = "video-generation")]
+    Video(VideoArgs),
 }
 
 #[derive(Args)]
@@ -83,6 +87,34 @@ enum SubtitleMode {
     Disabled,
     Sentence,
     Words,
+}
+
+#[cfg(feature = "video-generation")]
+#[derive(Args)]
+struct VideoArgs {
+    /// Input text/markdown file
+    input: PathBuf,
+    /// Output directory
+    #[arg(short, long)]
+    output: Option<PathBuf>,
+    /// Playback speed multiplier (1.0 = normal)
+    #[arg(short, long, default_value_t = 1.0)]
+    speed: f32,
+    /// Voice identifier (use `list-voices` to see options)
+    #[arg(short, long)]
+    voice: Option<String>,
+    /// Video style
+    #[arg(long, default_value = "cyberpunk")]
+    style: String,
+    /// Video resolution
+    #[arg(long, default_value = "720p")]
+    resolution: String,
+    /// Video format
+    #[arg(long, default_value = "mp4")]
+    format: String,
+    /// Custom video generation prompt
+    #[arg(long)]
+    prompt: Option<String>,
 }
 
 fn handle_convert(args: ConvertArgs) -> anyhow::Result<()> {
@@ -232,151 +264,9 @@ fn update_config(
     save_config(config)
 }
 
-<<<<<<< Local
-#[derive(Copy, Clone, Debug, ValueEnum)]
-enum SubtitleMode {
-    Disabled,
-    Sentence,
-    Words,
-}
-
-fn handle_convert(args: ConvertArgs) -> anyhow::Result<()> {
-    let voices = default_voice_profiles();
-    let mut config = load_config().unwrap_or_default();
-
-    let voice = select_voice(&voices, &mut config, args.voice.as_deref())
-        .ok_or_else(|| anyhow::anyhow!("voice not found; run `voxweave list-voices`"))?
-        .clone();
-
-    let output_dir = args
-        .output
-        .unwrap_or_else(|| default_output_dir(&args.input));
-
-    let subtitle_granularity = match args.subtitles {
-        SubtitleMode::Disabled => SubtitleGranularity::Disabled,
-        SubtitleMode::Sentence => SubtitleGranularity::Sentence,
-        SubtitleMode::Words => SubtitleGranularity::Words(args.words.max(1)),
-    };
-
-    let replace_single_newlines = if args.replace_single_newlines {
-        true
-    } else if args.keep_single_newlines {
-        false
-    } else {
-        config.replace_single_newlines
-    };
-
-    let request = ConvertRequest {
-        source: args.input.clone(),
-        output_dir: output_dir.clone(),
-        voice: voice.clone(),
-        speed: args.speed,
-        subtitle_granularity,
-        replace_single_newlines,
-        average_words_per_minute: args.wpm,
-    };
-
-    let audio_path = if args.mock {
-        let engine = MockSpeechEngine::default();
-        convert_path(&engine, &request)?
-    } else {
-        match voice.engine {
-            VoiceEngine::Espeak => {
-                let engine = EspeakEngine::default();
-                convert_path(&engine, &request)?
-            }
-            VoiceEngine::Kokoro => {
-                let engine = KokoroEngine::default();
-                convert_path(&engine, &request)?
-            }
-            #[cfg(feature = "coqui-tts")]
-            VoiceEngine::Coqui => {
-                let engine = CoquiEngine::default();
-                convert_path(&engine, &request)?
-            }
-            #[cfg(not(feature = "coqui-tts"))]
-            VoiceEngine::Coqui => {
-                anyhow::bail!("CoquiTTS support not enabled. Build with --features coqui-tts")
-            }
-        }
-    };
-
-    update_config(&mut config, &voice, &args.input, replace_single_newlines)?;
-
-    println!("✓ Audio saved to {}", audio_path.display());
-    if subtitle_granularity != SubtitleGranularity::Disabled {
-        let subtitle_path = audio_path.with_extension("srt");
-        if subtitle_path.exists() {
-            println!("✓ Subtitles saved to {}", subtitle_path.display());
-        }
-    }
-    Ok(())
-}
-
-fn handle_list_voices() -> anyhow::Result<()> {
-    let voices = default_voice_profiles();
-    println!("Available voices:");
-    for voice in voices {
-        println!(
-            "  {:<16} {:<8} {}",
-            voice.id,
-            voice.engine.as_str(),
-            voice.description
-        );
-    }
-    Ok(())
-}
-
-fn select_voice<'a>(
-    voices: &'a [VoiceProfile],
-    config: &mut AppConfig,
-    requested: Option<&str>,
-) -> Option<&'a VoiceProfile> {
-    if let Some(id) = requested {
-        return find_voice(voices, id);
-    }
-    if let Some(default_id) = &config.default_voice {
-        if let Some(voice) = find_voice(voices, default_id) {
-            return Some(voice);
-        }
-    }
-    // Default to am_michael (American English Male)
-    find_voice(voices, "am_michael")
-        .or_else(|| voices.first())
-}
-
-fn default_output_dir(input: &Path) -> PathBuf {
-    input
-        .parent()
-        .map(Path::to_path_buf)
-        .unwrap_or_else(|| PathBuf::from("."))
-}
-
-fn update_config(
-    config: &mut AppConfig,
-    voice: &VoiceProfile,
-    input: &Path,
-    replace_single_newlines: bool,
-) -> anyhow::Result<()> {
-    config.default_voice = Some(voice.id.clone());
-    config.replace_single_newlines = replace_single_newlines;
-
-    if let Some(path_str) = input.to_str() {
-        config.recent_files.retain(|item| item != path_str);
-        config.recent_files.insert(0, path_str.to_string());
-        if config.recent_files.len() > 10 {
-            config.recent_files.truncate(10);
-        }
-    }
-
-    save_config(config)
-}
-
 #[cfg(feature = "video-generation")]
 fn handle_video(args: VideoArgs) -> anyhow::Result<()> {
     use std::fs;
-    use voxweave::pipeline::ConvertRequest;
-    use voxweave::queue::SubtitleGranularity;
 
     let voices = default_voice_profiles();
     let mut config = load_config().unwrap_or_default();
@@ -390,7 +280,7 @@ fn handle_video(args: VideoArgs) -> anyhow::Result<()> {
         .unwrap_or_else(|| default_output_dir(&args.input));
 
     // Read input text
-    let _text_content = fs::read_to_string(&args.input)
+    fs::read_to_string(&args.input)
         .map_err(|e| anyhow::anyhow!("Failed to read input file: {}", e))?;
 
     // Step 1: Generate audio with subtitles
@@ -403,6 +293,8 @@ fn handle_video(args: VideoArgs) -> anyhow::Result<()> {
         subtitle_granularity: SubtitleGranularity::Sentence,
         replace_single_newlines: config.replace_single_newlines,
         average_words_per_minute: 150.0,
+        create_package: false,
+        package_name: None,
     };
 
     let audio_path = match voice.engine {
@@ -511,6 +403,7 @@ async fn generate_video_cli(
         resolution: video_resolution,
         format: video_format,
         prompt: prompt.map(|s| s.to_string()),
+        image_urls: None,
     };
 
     // Initialize video generation service
@@ -545,6 +438,3 @@ async fn generate_video_cli(
     println!(); // New line after progress
     Ok(video_path)
 }
-
-=======
->>>>>>> Remote

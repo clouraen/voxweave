@@ -17,6 +17,79 @@ pub enum SubtitleGranularity {
     Words(u8),
 }
 
+/// Video generation style
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum VideoStyle {
+    Realistic,
+    Anime,
+    ThreeD,
+    Cinematic,
+    Biotech,
+    Cyberpunk,
+    Educational,
+    Wan2_5,
+}
+
+impl VideoStyle {
+    pub fn as_str(&self) -> &'static str {
+        match self {
+            VideoStyle::Realistic => "realistic",
+            VideoStyle::Anime => "anime",
+            VideoStyle::ThreeD => "3d",
+            VideoStyle::Cinematic => "cinematic",
+            VideoStyle::Biotech => "biotech",
+            VideoStyle::Cyberpunk => "cyberpunk",
+            VideoStyle::Educational => "educational",
+            VideoStyle::Wan2_5 => "wan2.5",
+        }
+    }
+}
+
+/// Video resolution
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum VideoResolution {
+    P720,
+    P1080,
+    P4K,
+}
+
+impl VideoResolution {
+    pub fn as_str(&self) -> &'static str {
+        match self {
+            VideoResolution::P720 => "720p",
+            VideoResolution::P1080 => "1080p",
+            VideoResolution::P4K => "4k",
+        }
+    }
+}
+
+/// Video output format
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum VideoFormat {
+    Mp4,
+    Mov,
+    Webm,
+}
+
+impl VideoFormat {
+    pub fn as_str(&self) -> &'static str {
+        match self {
+            VideoFormat::Mp4 => "mp4",
+            VideoFormat::Mov => "mov",
+            VideoFormat::Webm => "webm",
+        }
+    }
+}
+
+/// Log level for callbacks
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum LogLevel {
+    Info,
+    Notice,
+    Warning,
+    Error,
+}
+
 #[derive(Default)]
 pub struct ConversionQueue {
     items: Vec<QueueItem>,
