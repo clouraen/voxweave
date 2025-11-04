@@ -10,6 +10,9 @@ pub mod queue_modal;
 pub mod teleprompter;
 pub mod gesture_control;
 pub mod recording_screen;
+pub mod output_configuration;
+pub mod voice_selector;
+pub mod video_configuration;
 #[cfg(feature = "coqui-tts")]
 pub mod audio_recorder;
 
@@ -25,6 +28,8 @@ pub use queue_modal::QueueModal;
 pub use teleprompter::Teleprompter;
 pub use gesture_control::GestureControl;
 pub use recording_screen::RecordingScreen;
+pub use output_configuration::OutputConfiguration;
+pub use voice_selector::VoiceSelector;
+pub use video_configuration::VideoConfiguration;
 #[cfg(feature = "coqui-tts")]
 pub use audio_recorder::{AudioRecorder, RecordingState};
-
