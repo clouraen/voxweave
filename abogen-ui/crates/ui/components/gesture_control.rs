@@ -1,4 +1,5 @@
 use dioxus::prelude::*;
+use crate::components::neon_button::NeonButton;
 
 /// Gesture Recognition Control Component for Teleprompter
 #[component]
@@ -48,7 +49,6 @@ pub fn GestureControl(
                 NeonButton {
                     primary: true,
                     onclick: move |_| on_gesture_up.call(()),
-                    style: "height: 50px;",
                     "↑"
                 }
                 
@@ -59,7 +59,6 @@ pub fn GestureControl(
                 NeonButton {
                     primary: true,
                     onclick: move |_| on_gesture_left.call(()),
-                    style: "height: 50px;",
                     "←"
                 }
                 
@@ -67,7 +66,6 @@ pub fn GestureControl(
                 NeonButton {
                     primary: true,
                     onclick: move |_| on_gesture_ok.call(()),
-                    style: "height: 50px;",
                     "OK"
                 }
                 
@@ -75,7 +73,6 @@ pub fn GestureControl(
                 NeonButton {
                     primary: true,
                     onclick: move |_| on_gesture_right.call(()),
-                    style: "height: 50px;",
                     "→"
                 }
                 
@@ -86,7 +83,6 @@ pub fn GestureControl(
                 NeonButton {
                     primary: true,
                     onclick: move |_| on_gesture_down.call(()),
-                    style: "height: 50px;",
                     "↓"
                 }
                 

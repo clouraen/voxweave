@@ -9,7 +9,7 @@ pub mod services;
 
 pub use state::*;
 pub use components::*;
-use components::recording_screen::RecordingScreen;
+
 
 
 /// Root application component
@@ -28,120 +28,104 @@ pub fn App() -> Element {
 
 #[component]
 fn InnerApp() -> Element {
-    let app_state = AppState::new();
-    let current_screen = use_signal(|| Screen::Main);
+    let mut app_state = AppState::new();
+    let mut current_screen = use_signal(|| Screen::Main);
 
     rsx! {
         match *current_screen.read() {
             Screen::Main => rsx! {
                 MainScreen {
                     state: app_state.clone(),
-                    on_start: {
-                        let mut is_processing = app_state.is_processing;
-                        let mut progress = app_state.progress;
-                        let mut logs = app_state.logs;
-                        let mut cancel_token = app_state.cancel_token;
-                        let mut current_screen = current_screen;
-                        move |_| {
-                            // Check if queue is not empty and not already processing
-                            if !app_state.queue.read().is_empty() && !*is_processing.read() {
-                                // Clear any previous cancel token
-                                *cancel_token.write() = None;
-                                // Reset processing state
-                                *is_processing.write() = true;
-                                *progress.write() = 0;
-                                logs.write().clear();
-                                // Switch to processing screen
-                                *current_screen.write() = Screen::Processing;
+                    on_start: move |_| {
+                        let app_state_clone = app_state.clone();
+                        let current_screen_clone = current_screen.clone();
+                        // Check if queue is not empty and not already processing
+                        if !app_state.queue.read().is_empty() && !*app_state.is_processing.read() {
+                            // Clear any previous cancel token
+                            *app_state.cancel_token.write() = None;
+                            // Reset processing state
+                            *app_state.is_processing.write() = true;
+                            *app_state.progress.write() = 0;
+                            app_state.logs.write().clear();
+                            // Switch to processing screen
+                            *current_screen.write() = Screen::Processing;
+                            
+                            // Spawn processing task
+                            dioxus::prelude::spawn(async move {
+                                let mut state = app_state_clone;
+                                let queue = state.queue.read().clone();
+                                let mut current_screen_inner = current_screen_clone;
                                 
-                                // Spawn processing task
-                                dioxus::prelude::spawn({
-                                    let state = app_state.clone();
-                                    let mut is_processing = state.is_processing;
-                                    let mut cancel_token = state.cancel_token;
-                                    let mut logs = state.logs;
-                                    let queue = app_state.queue.read().clone();
-                                    let mut current_screen_clone = current_screen;
-                                    async move {
-                                    // Validate queue is not empty
-                                    if queue.is_empty() {
-                                        *is_processing.write() = false;
-                                        return;
-                                    }
-                                    
-                                    // Clear cancel token at start of new process
-                                    *cancel_token.write() = None;
-                                    
-                                    // Add a small delay to ensure UI has time to render processing screen
-                                    tokio::time::sleep(tokio::time::Duration::from_millis(100)).await;
-                                    
-                                    #[cfg(feature = "real-tts")]
-                                    let result = crate::services::tts_service::process_queue(state.clone(), queue).await;
-                                    #[cfg(not(feature = "real-tts"))]
-                                    let result = crate::services::tts_stub::process_queue(state.clone(), queue).await;
-                                    
-                                    // Reset processing state
-                                    *is_processing.write() = false;
-                                    
-                                    // Check if cancelled
-                                    if cancel_token.read().is_some() {
-                                        // Was cancelled - already returned to main screen by cancel handler
-                                        *cancel_token.write() = None; // Clear for next time
-                                    } else {
-                                        // Check if there was an error
-                                        if let Err(ref e) = result {
-                                            // Log error but don't immediately return to main screen
-                                            // Let user see the error in logs first
-                                            logs.write().push(crate::state::LogEntry {
-                                                message: format!("Processing completed with error: {}", e),
-                                                level: crate::state::LogLevel::Error,
-                                            });
-                                            // Wait longer so user can see the error and logs
-                                            tokio::time::sleep(tokio::time::Duration::from_secs(3)).await;
-                                        } else {
-                                            // Success - log completion message
-                                            logs.write().push(crate::state::LogEntry {
-                                                message: "Processing completed successfully!".to_string(),
-                                                level: crate::state::LogLevel::Info,
-                                            });
-                                            // Brief delay to show completion message
-                                            tokio::time::sleep(tokio::time::Duration::from_secs(1)).await;
-                                        }
-                                        
-                                        // Return to main screen after processing completes
-                                        *current_screen_clone.write() = Screen::Main;
-                                    }
+                                // Validate queue is not empty
+                                if queue.is_empty() {
+                                    *state.is_processing.write() = false;
+                                    return;
                                 }
-                                });
-                            }
+                                
+                                // Clear cancel token at start of new process
+                                *state.cancel_token.write() = None;
+                                
+                                // Add a small delay to ensure UI has time to render processing screen
+                                tokio::time::sleep(tokio::time::Duration::from_millis(100)).await;
+                                
+                                #[cfg(feature = "real-tts")]
+                                let result = crate::services::tts_service::process_queue(state.clone(), queue).await;
+                                #[cfg(not(feature = "real-tts"))]
+                                let result = crate::services::tts_stub::process_queue(state.clone(), queue).await;
+                                
+                                // Reset processing state
+                                *state.is_processing.write() = false;
+                                
+                                // Check if cancelled
+                                if state.cancel_token.read().is_some() {
+                                    // Was cancelled - already returned to main screen by cancel handler
+                                    *state.cancel_token.write() = None; // Clear for next time
+                                } else {
+                                    // Check if there was an error
+                                    if let Err(ref e) = result {
+                                        // Log error but don't immediately return to main screen
+                                        // Let user see the error in logs first
+                                        state.logs.write().push(crate::state::LogEntry {
+                                            message: format!("Processing completed with error: {}", e),
+                                            level: crate::state::LogLevel::Error,
+                                        });
+                                        // Wait longer so user can see the error and logs
+                                        tokio::time::sleep(tokio::time::Duration::from_secs(3)).await;
+                                    } else {
+                                        // Success - log completion message
+                                        state.logs.write().push(crate::state::LogEntry {
+                                            message: "Processing completed successfully!".to_string(),
+                                            level: crate::state::LogLevel::Info,
+                                        });
+                                        // Brief delay to show completion message
+                                        tokio::time::sleep(tokio::time::Duration::from_secs(1)).await;
+                                    }
+                                    
+                                    // Return to main screen after processing completes
+                                    *current_screen_inner.write() = Screen::Main;
+                                }
+                            });
                         }
                     },
-                    on_cancel: {
-                        let mut current_screen = current_screen;
-                        move |_| {
-                            *current_screen.write() = Screen::Main;
-                        }
+                    on_cancel: move |_| {
+                        *current_screen.write() = Screen::Main;
                     },
-                    current_screen: current_screen,
                 }
             },
             Screen::Processing => rsx! {
                 ProcessingScreen {
                     state: app_state.clone(),
-                    on_cancel: {
-                        let mut cancel_token = app_state.cancel_token;
-                        let mut is_processing = app_state.is_processing;
-                        let mut current_screen = current_screen;
-                        move |_| {
-                            // Set cancel token to stop processing
-                            *cancel_token.write() = Some(());
-                            // Reset processing state
-                            *is_processing.write() = false;
-                            // Return to main screen
-                            *current_screen.write() = Screen::Main;
-                            // Clear cancel token after a brief delay to allow processing to detect cancellation
-                            // The next START will clear it anyway
-                        }
+                    on_cancel: move |_| {
+                        let mut app_state_clone = app_state.clone();
+                        let mut current_screen_clone = current_screen.clone();
+                        // Set cancel token to stop processing
+                        *app_state_clone.cancel_token.write() = Some(());
+                        // Reset processing state
+                        *app_state_clone.is_processing.write() = false;
+                        // Return to main screen
+                        *current_screen_clone.write() = Screen::Main;
+                        // Clear cancel token after a brief delay to allow processing to detect cancellation
+                        // The next START will clear it anyway
                     },
                 }
             },

@@ -11,8 +11,8 @@ pub fn RecordingScreen(
     on_resume: EventHandler<()>,
 ) -> Element {
     let is_recording = use_signal(|| true);
-    let is_paused = use_signal(|| false);
-    let scroll_speed = use_signal(|| 1.0);
+    let mut is_paused = use_signal(|| false);
+    let mut scroll_speed = use_signal(|| 1.0);
     let teleprompter_text = use_signal(|| "Welcome to the Cyberpunk Teleprompter System. This is a sample text that will scroll as you present. You can control the scrolling speed using the slider below. Use the gesture controls or keyboard arrows to navigate.".to_string());
     
     rsx! {
@@ -263,12 +263,12 @@ pub fn RecordingScreen(
         }
         
         // CSS for pulse animation
-        style { "
-            @keyframes pulse {
-                0% { opacity: 1; }
-                50% { opacity: 0.5; }
-                100% { opacity: 1; }
-            }
-        " }
+        style { {"\
+            @keyframes pulse {\
+                0% { opacity: 1; }\
+                50% { opacity: 0.5; }\
+                100% { opacity: 1; }\
+            }\
+        "} }
     }
 }

@@ -1,4 +1,5 @@
 use dioxus::prelude::*;
+use crate::components::neon_button::NeonButton;
 
 /// Cyberpunk Futurist Teleprompter Component
 #[component]
@@ -23,7 +24,8 @@ pub fn Teleprompter(
                 loop {
                     tokio::time::sleep(tokio::time::Duration::from_millis(interval as u64)).await;
                     if is_playing {
-                        scroll_position.write().clone_from(&(scroll_position.read().clone() + pixels_per_frame));
+                        let current = *scroll_position.read();
+                        scroll_position.set(current + pixels_per_frame);
                         on_scroll.call(());
                     }
                 }
@@ -78,7 +80,7 @@ pub fn Teleprompter(
                     font-size: 24px;
                     line-height: 1.5;
                     text-align: center;
-                    transform: translateY({-scroll_position.read()}px);
+                    transform: translateY({-(*scroll_position.read())}px);
                     transition: transform 0.1s linear;
                 ",
                 "{text}"
@@ -127,14 +129,16 @@ pub fn Teleprompter(
                 
                 NeonButton {
                     onclick: move |_| {
-                        scroll_position.write().clone_from(&(scroll_position.read().clone() - 50.0));
+                        let current = *scroll_position.read();
+                        scroll_position.set(current - 50.0);
                     },
                     "REWIND"
                 }
                 
                 NeonButton {
                     onclick: move |_| {
-                        scroll_position.write().clone_from(&(scroll_position.read().clone() + 50.0));
+                        let current = *scroll_position.read();
+                        scroll_position.set(current + 50.0);
                     },
                     "FAST FORWARD"
                 }
